@@ -5,6 +5,7 @@ import '../providers/app_data_provider.dart';
 import '../services/api_service.dart';
 import 'main_screen.dart';
 import 'login_screen.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -28,13 +29,13 @@ class _SplashScreenState extends State<SplashScreen> {
   Future<void> _checkAuth() async {
     // Delay untuk splash screen
     await Future.delayed(const Duration(seconds: 2));
-    
+
     final token = await ApiService.getToken();
     final prefs = await SharedPreferences.getInstance();
     final lastActiveStr = prefs.getString('last_active_time');
-    
+
     bool sessionExpired = false;
-    
+
     if (token != null) {
       if (lastActiveStr != null) {
         final lastActive = DateTime.parse(lastActiveStr);
@@ -43,12 +44,15 @@ class _SplashScreenState extends State<SplashScreen> {
           await ApiService.logout();
         }
       }
-      
+
       if (!sessionExpired) {
         // Refresh token since the user is active within 24 hours
         final refreshResult = await ApiService.refreshToken();
         if (refreshResult['success'] == true) {
-          await prefs.setString('last_active_time', DateTime.now().toIso8601String());
+          await prefs.setString(
+            'last_active_time',
+            DateTime.now().toIso8601String(),
+          );
         } else {
           // If refresh fails (e.g. token actually invalid in backend), force login
           sessionExpired = true;
@@ -56,7 +60,7 @@ class _SplashScreenState extends State<SplashScreen> {
         }
       }
     }
-    
+
     if (mounted) {
       if (token != null && !sessionExpired) {
         Navigator.pushReplacement(
@@ -84,22 +88,22 @@ class _SplashScreenState extends State<SplashScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).primaryColor,
-      body: const Center(
+      body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.storefront, size: 100, color: Colors.white),
-            SizedBox(height: 24),
+            const Icon(Icons.storefront, size: 100, color: Colors.white),
+            const SizedBox(height: 24),
             Text(
-              'Optimasi Pangkalan',
-              style: TextStyle(
+              'Pangkalan Sate',
+              style: GoogleFonts.nunito(
                 fontSize: 32,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w700,
                 color: Colors.white,
               ),
             ),
-            SizedBox(height: 24),
-            CircularProgressIndicator(color: Colors.white),
+            const SizedBox(height: 24),
+            const CircularProgressIndicator(color: Colors.white),
           ],
         ),
       ),
