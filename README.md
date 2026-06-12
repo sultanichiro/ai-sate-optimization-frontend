@@ -136,7 +136,7 @@ flutter clean
 
 # 👨‍💻 Developer
 
-Project ini dibuat untuk keperluan Tugas Akhir.
+Project Tugas Akhir Frontend Flutter.
 by Sultan Maulana Ichiro
 
 ---
