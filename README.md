@@ -2,7 +2,7 @@
 
 Aplikasi frontend berbasis **Flutter (Dart)** untuk sistem proyek Tugas Akhir.
 
-Repository ini berisi source code yang dapat langsung dijalankan di berbagai device (Android, iOS, Emulator, maupun Web).
+Repository berisi source code yang dapat langsung dijalankan di berbagai device (Android, iOS, Emulator, maupun Web).
 
 ---
 
@@ -19,57 +19,11 @@ https://docs.flutter.dev/get-started/install
 
 ---
 
-### 📦 Extract Flutter
-
-* Extract ke folder, misalnya:
-
-```
-C:\flutter
-```
-
----
-
-### ⚙️ Tambahkan ke PATH
-
-Tambahkan:
-
-```
-C:\flutter\bin
-```
-
-ke Environment Variables → PATH
-
----
-
-### ✅ Cek Instalasi
-
-Buka terminal lalu jalankan:
-
-```
-flutter doctor
-```
-
-Pastikan tidak ada error penting.
-
----
-
-## 2. Install Android Studio (Optional tapi disarankan)
-
-Download:
-https://developer.android.com/studio
-
-Install:
-
-* Android SDK
-* Emulator (AVD)
-
----
-
 ## 3. Clone Project
 
 ```
-git clone https://github.com/USERNAME/NAMA_REPO.git
-cd NAMA_REPO
+https://github.com/sultanichiro/ai-sate-optimization-frontend.git
+cd ai-sate-optimization-frontend
 ```
 
 ---
@@ -137,69 +91,6 @@ flutter run
 flutter run -d chrome
 ```
 
----
-
-# 📦 Build APK (Untuk Dibagikan)
-
-## 🔨 Build APK
-
-```
-flutter build apk
-```
-
-File hasil:
-
-```
-build/app/outputs/flutter-apk/app-release.apk
-```
-
-👉 Kirim file ini ke device lain → install langsung
-
----
-
-## 📲 Install APK di Device
-
-1. Kirim file `.apk`
-2. Aktifkan:
-
-   * Install from unknown sources
-3. Install aplikasi
-
----
-
-# 📁 Struktur Project
-
-```
-lib/
-├── main.dart
-├── screens/
-├── widgets/
-├── services/
-```
-
----
-
-# ⚠️ Catatan Penting
-
-## 🔐 Jangan upload:
-
-* file `.env`
-* API key
-* credential sensitif
-
----
-
-## 🧹 File yang tidak ikut Git
-
-Sudah diatur di `.gitignore`:
-
-* build/
-* .dart_tool/
-* .idea/
-* .vscode/
-
----
-
 # 🧪 Troubleshooting
 
 ## ❌ Error saat `flutter run`
@@ -246,26 +137,6 @@ flutter clean
 # 👨‍💻 Developer
 
 Project ini dibuat untuk keperluan Tugas Akhir.
+by Sultan Maulana Ichiro
 
 ---
-
-# 🚀 Next Improvement
-
-* Integrasi backend API
-* Optimasi UI/UX
-* Deployment ke Play Store
-
----
-
-# ⭐ Cara Berkontribusi
-
-1. Fork repo
-2. Buat branch baru
-3. Commit perubahan
-4. Pull request
-
----
-
-# 📄 License
-
-Free to use for educational purposes.
