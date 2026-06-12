@@ -138,8 +138,6 @@ class _AddLokasiScreenState extends State<AddLokasiScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Tambah Lokasi Baru'),
-        backgroundColor: Theme.of(context).primaryColor,
-        foregroundColor: Colors.white,
       ),
       body: SafeArea(
         child: SingleChildScrollView(

@@ -146,9 +146,6 @@ class _PenjualanScreenState extends State<PenjualanScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Input Penjualan'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
-        elevation: 1,
       ),
       body: _isLoadingSesi
           ? const Center(child: CircularProgressIndicator())

@@ -93,9 +93,6 @@ class _LokasiScreenState extends State<LokasiScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Manajemen Lokasi'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
-        elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),

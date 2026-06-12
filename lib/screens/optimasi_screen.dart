@@ -158,15 +158,11 @@ class _OptimasiScreenState extends State<OptimasiScreen>
           SliverAppBar(
             expandedHeight: 140,
             pinned: true,
-            backgroundColor: const Color(0xFF1B5E20),
+            backgroundColor: Theme.of(context).appBarTheme.backgroundColor ?? Theme.of(context).primaryColor,
             flexibleSpace: FlexibleSpaceBar(
               background: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFF2E7D32), Color(0xFF388E3C)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).appBarTheme.backgroundColor ?? Theme.of(context).primaryColor,
                 ),
                 child: SafeArea(
                   child: Padding(

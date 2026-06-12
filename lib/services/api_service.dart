@@ -6,10 +6,20 @@ import 'package:flutter/foundation.dart';
 
 class ApiService {
   // Gunakan 10.0.2.2 untuk Android Emulator, 127.0.0.1 untuk iOS Simulator / Web.
+  // static String get baseUrl {
+  //   if (kIsWeb) return 'http://127.0.0.1:8000';
+  //   if (Platform.isAndroid) return 'http://10.0.2.2:8000';
+  //   return 'http://127.0.0.1:8000';
+  // }
+
+  static const bool isProduction = true;
+
   static String get baseUrl {
-    if (kIsWeb) return 'http://127.0.0.1:8000';
-    if (Platform.isAndroid) return 'http://10.0.2.2:8000';
-    return 'http://127.0.0.1:8000';
+    if (isProduction) {
+      return "https://ai-sate-optimization-backend-production.up.railway.app";
+    } else {
+      return "http://10.0.2.2:8000";
+    }
   }
 
   static const String _tokenKey = 'jwt_token';
@@ -18,6 +28,7 @@ class ApiService {
   static Future<void> saveToken(String token) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_tokenKey, token);
+    await prefs.setString('last_active_time', DateTime.now().toIso8601String());
   }
 
   static Future<String?> getToken() async {
@@ -28,6 +39,7 @@ class ApiService {
   static Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tokenKey);
+    await prefs.remove('last_active_time');
   }
 
   // --- HELPERS ---
@@ -122,6 +134,23 @@ class ApiService {
     }
   }
 
+  static Future<Map<String, dynamic>> refreshToken() async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/refresh-token'),
+        headers: await _getHeaders(),
+      );
+      final data = _handleResponse(response);
+
+      if (data['success'] == true && data['token'] != null) {
+        await saveToken(data['token']);
+      }
+      return data;
+    } catch (e) {
+      return {'success': false, 'message': 'Terjadi kesalahan jaringan: $e'};
+    }
+  }
+
   // --- LOKASI ---
   static Future<Map<String, dynamic>> getLokasi() async {
     try {
@@ -179,7 +208,9 @@ class ApiService {
   }
 
   // --- PENJUALAN ---
-  static Future<Map<String, dynamic>> getPerformaPenjualan({int days = 7}) async {
+  static Future<Map<String, dynamic>> getPerformaPenjualan({
+    int days = 7,
+  }) async {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/penjualan/performa?days=$days'),
@@ -329,7 +360,6 @@ class ApiService {
       return {'success': false, 'message': 'Terjadi kesalahan jaringan: $e'};
     }
   }
-
 
   // --- EPISODE ---
   static Future<Map<String, dynamic>> getEpisodes() async {

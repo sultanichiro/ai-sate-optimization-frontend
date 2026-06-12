@@ -13,9 +13,6 @@ class HistoryScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Riwayat Penjualan"),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
-        elevation: 1,
       ),
       body: const TransactionHistoryList(),
     );

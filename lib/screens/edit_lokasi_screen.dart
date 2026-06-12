@@ -145,8 +145,6 @@ class _EditLokasiScreenState extends State<EditLokasiScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Edit Lokasi'),
-        backgroundColor: Theme.of(context).primaryColor,
-        foregroundColor: Colors.white,
       ),
       body: SafeArea(
         child: SingleChildScrollView(

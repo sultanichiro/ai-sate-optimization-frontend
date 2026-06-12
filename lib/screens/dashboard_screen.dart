@@ -409,20 +409,15 @@ class _DashboardScreenState extends State<DashboardScreen>
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: const Text(
-          "Beranda",
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
-        ),
-        backgroundColor: Colors.white,
-        elevation: 0,
+        title: const Text("Beranda"),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.black54),
+            icon: const Icon(Icons.refresh),
             tooltip: 'Refresh',
             onPressed: _checkSesiAktif,
           ),
           IconButton(
-            icon: const Icon(Icons.logout, color: Colors.black87),
+            icon: const Icon(Icons.logout),
             tooltip: 'Logout',
             onPressed: () {
               showDialog(
@@ -837,12 +832,16 @@ class _DashboardScreenState extends State<DashboardScreen>
             width: double.infinity,
             child: ElevatedButton.icon(
               onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const OptimasiScreen(),
-                  ),
-                );
+                if (widget.onNavigateToHistory != null) {
+                  widget.onNavigateToHistory!(1);
+                } else {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const OptimasiScreen(),
+                    ),
+                  );
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF2E7D32),

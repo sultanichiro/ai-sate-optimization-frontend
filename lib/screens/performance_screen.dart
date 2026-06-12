@@ -97,7 +97,7 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Performa Penjualan"), elevation: 0),
+      appBar: AppBar(title: const Text("Performa Penjualan")),
       body: isLoading 
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
