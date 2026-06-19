@@ -27,6 +27,28 @@ class RuteLokasiResponse {
     );
   }
 }
+class DurasiLokasiResponse {
+  final int lokasiId;
+  final String nama;
+  final int durasiMenit;
+  final double reward;
+
+  DurasiLokasiResponse({
+    required this.lokasiId,
+    required this.nama,
+    required this.durasiMenit,
+    this.reward = 0.0,
+  });
+
+  factory DurasiLokasiResponse.fromJson(Map<String, dynamic> json) {
+    return DurasiLokasiResponse(
+      lokasiId: (json['lokasi_id'] as num?)?.toInt() ?? 0,
+      nama: json['nama']?.toString() ?? '-',
+      durasiMenit: (json['durasi_menit'] as num?)?.toInt() ?? 0,
+      reward: (json['reward'] as num?)?.toDouble() ?? 0.0,
+    );
+  }
+}
 
 class OptimasiResponse {
   final bool success;
@@ -40,6 +62,8 @@ class OptimasiResponse {
   final String penjelasan;
   final String kondisiCuaca;
   final int hariKuliah;
+  final List<DurasiLokasiResponse> durasiRekomendasi;
+  final double totalRewardLokasi;
 
   // ---- Field lama (backward compat) ----
   final List<RuteLokasiResponse> ruteOptimal;
@@ -58,6 +82,8 @@ class OptimasiResponse {
     this.penjelasan = '',
     this.kondisiCuaca = 'cerah',
     this.hariKuliah = 1,
+    this.durasiRekomendasi = const [],
+    this.totalRewardLokasi = 0.0,
     this.ruteOptimal = const [],
     this.totalReward = 0.0,
     this.totalJarak = 0.0,
@@ -90,6 +116,14 @@ class OptimasiResponse {
           .toList();
     }
 
+    // Parse durasi_rekomendasi list
+    List<DurasiLokasiResponse> durasi = [];
+    if (json['durasi_rekomendasi'] != null && json['durasi_rekomendasi'] is List) {
+      durasi = (json['durasi_rekomendasi'] as List)
+          .map((e) => DurasiLokasiResponse.fromJson(e as Map<String, dynamic>))
+          .toList();
+    }
+
     return OptimasiResponse(
       success: json['success'] as bool? ?? false,
       message: json['message']?.toString() ?? '',
@@ -102,6 +136,8 @@ class OptimasiResponse {
       penjelasan: json['penjelasan']?.toString() ?? '',
       kondisiCuaca: json['kondisi_cuaca']?.toString() ?? 'cerah',
       hariKuliah: (json['hari_kuliah'] as num?)?.toInt() ?? 1,
+      durasiRekomendasi: durasi,
+      totalRewardLokasi: (json['total_reward_lokasi'] as num?)?.toDouble() ?? 0.0,
       // Field lama
       ruteOptimal: rute,
       totalReward: (json['total_reward'] as num?)?.toDouble() ?? 0.0,

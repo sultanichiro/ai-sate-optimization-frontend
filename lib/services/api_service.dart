@@ -12,13 +12,15 @@ class ApiService {
   //   return 'http://127.0.0.1:8000';
   // }
 
-  static const bool isProduction = true;
+  static const bool isProduction = false;
 
   static String get baseUrl {
     if (isProduction) {
       return "https://ai-sate-optimization-backend-production.up.railway.app";
     } else {
-      return "http://10.0.2.2:8000";
+      if (kIsWeb) return 'http://127.0.0.1:8000';
+      if (Platform.isAndroid) return 'http://10.0.2.2:8000';
+      return 'http://127.0.0.1:8000';
     }
   }
 
@@ -274,6 +276,21 @@ class ApiService {
     }
   }
 
+  static Future<Map<String, dynamic>> pindahLokasi(
+    Map<String, dynamic> data,
+  ) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/kunjungan/pindah'),
+        headers: await _getHeaders(),
+        body: jsonEncode(data),
+      );
+      return _handleResponse(response);
+    } catch (e) {
+      return {'success': false, 'message': 'Terjadi kesalahan jaringan: $e'};
+    }
+  }
+
   static Future<Map<String, dynamic>> addTransaksi(
     Map<String, dynamic> data,
   ) async {
@@ -361,6 +378,21 @@ class ApiService {
     }
   }
 
+  static Future<Map<String, dynamic>> optimasiSelanjutnya(
+    Map<String, dynamic> data,
+  ) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/optimasi/selanjutnya'),
+        headers: await _getHeaders(),
+        body: jsonEncode(data),
+      );
+      return _handleResponse(response);
+    } catch (e) {
+      return {'success': false, 'message': 'Terjadi kesalahan jaringan: $e'};
+    }
+  }
+
   // --- EPISODE ---
   static Future<Map<String, dynamic>> getEpisodes() async {
     try {
@@ -412,4 +444,6 @@ class ApiService {
       return {'success': false, 'message': 'Terjadi kesalahan jaringan: $e'};
     }
   }
+
+
 }

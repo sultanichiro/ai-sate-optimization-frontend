@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'dashboard_screen.dart';
-import 'optimasi_screen.dart';
 import 'performance_screen.dart';
 import 'penjualan_screen.dart';
 import 'lokasi_screen.dart';
@@ -23,7 +22,6 @@ class _MainScreenState extends State<MainScreen> {
     super.initState();
     _screens = [
       DashboardScreen(onNavigateToHistory: (index) => _onItemTapped(index)),
-      const OptimasiScreen(),
       const PerformanceScreen(),
       const PenjualanScreen(),
       const LokasiScreen(),
@@ -46,10 +44,6 @@ class _MainScreenState extends State<MainScreen> {
           BottomNavigationBarItem(
             icon: Icon(Icons.home_rounded),
             label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.route_rounded),
-            label: 'Rute',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.bar_chart_rounded),

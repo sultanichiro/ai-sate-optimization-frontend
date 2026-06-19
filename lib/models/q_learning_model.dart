@@ -4,13 +4,7 @@ class QLearningModel {
   // States: Location + Weather + CampusStatus
   // Actions: Stay, Move
 
-  final Map<String, Map<String, double>> _qTable = {};
-  final double _learningRate = 0.1;
-  final double _discountFactor = 0.9;
   final double _explorationRate = 0.2; // Epsilon
-
-  // Simplified locations
-  final List<String> _locations = ['Pangkalan 1', 'Pangkalan 2', 'Alun-Alun', 'Komplek A'];
 
   QLearningModel() {
     _initializeQTable();

@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
 import '../services/api_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../models/optimasi_model.dart';
 import 'login_screen.dart';
-import 'optimasi_screen.dart';
+import 'rute_detail_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   final Function(int)? onNavigateToHistory;
@@ -21,18 +23,98 @@ class _DashboardScreenState extends State<DashboardScreen>
   bool _isLoadingSesi = false;
   bool _isLoadingAction = false;
 
-  // Timer untuk durasi berjalan
   Timer? _durationTimer;
   Duration _elapsedDuration = Duration.zero;
 
-  // Cuaca
-  String _selectedCuaca = 'cerah';
-  final List<String> _cuacaOptions = ['cerah', 'mendung', 'hujan'];
+  // Q-Learning Next Step state
+  int? _currentLokasiId;
+  String _currentLokasiNama = 'Basecamp';
+  Map<String, dynamic>? _rekomendasiSelanjutnya;
+  bool _isLoadingRekomendasi = false;
 
   @override
   void initState() {
     super.initState();
     _checkSesiAktif();
+    _fetchInitialLokasi();
+  }
+
+  Future<void> _fetchInitialLokasi() async {
+    final result = await ApiService.getLokasi();
+    if (result['success'] == true && result['data'] != null) {
+      final List<dynamic> lokasiList = result['data'];
+      
+      final prefs = await SharedPreferences.getInstance();
+      final savedLokasiId = prefs.getString('selected_lokasi_id');
+      
+      Map<String, dynamic>? selectedLokasi;
+      if (savedLokasiId != null) {
+        selectedLokasi = lokasiList.firstWhere(
+          (loc) => loc['id'].toString() == savedLokasiId,
+          orElse: () => null,
+        );
+      }
+      
+      if (selectedLokasi == null) {
+        selectedLokasi = lokasiList.firstWhere(
+          (loc) => loc['nama']?.toString().toLowerCase().contains('basecamp') == true,
+          orElse: () => null,
+        );
+      }
+      
+      if (selectedLokasi == null && lokasiList.isNotEmpty) {
+        selectedLokasi = lokasiList.first;
+      }
+      
+      if (selectedLokasi != null) {
+        if (mounted) {
+          setState(() {
+            _currentLokasiId = selectedLokasi!['id'];
+            _currentLokasiNama = selectedLokasi!['nama'];
+          });
+        }
+      }
+    }
+  }
+
+  Future<void> _mintaRekomendasiSelanjutnya() async {
+    if (_currentLokasiId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Lokasi saat ini belum diketahui (Basecamp tidak ditemukan).'), backgroundColor: Colors.orange),
+      );
+      return;
+    }
+
+    setState(() => _isLoadingRekomendasi = true);
+    
+    // Perkirakan sisa waktu, asumsi 8 jam (480 menit) dari waktu mulai. Jika tidak, pakai 120 menit default.
+    int sisaWaktu = 120;
+    if (_sesiAktif != null && _sesiAktif!['waktu_mulai'] != null) {
+      final waktuMulai = DateTime.parse(_sesiAktif!['waktu_mulai']).toLocal();
+      final elapsedMenit = DateTime.now().difference(waktuMulai).inMinutes;
+      sisaWaktu = 480 - elapsedMenit;
+      if (sisaWaktu < 30) sisaWaktu = 30; // minimal 30 menit
+    }
+
+    final data = {
+      'lokasi_saat_ini_id': _currentLokasiId,
+      'sisa_waktu_menit': sisaWaktu,
+    };
+
+    final result = await ApiService.optimasiSelanjutnya(data);
+
+    if (mounted) {
+      setState(() => _isLoadingRekomendasi = false);
+      if (result['success'] == true) {
+        setState(() {
+          _rekomendasiSelanjutnya = result;
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result['message'] ?? 'Gagal mendapatkan rekomendasi.'), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
   @override
@@ -65,31 +147,31 @@ class _DashboardScreenState extends State<DashboardScreen>
   Future<void> _startBerjualan() async {
     setState(() => _isLoadingAction = true);
 
-    final now = DateTime.now();
-    final hariKuliah = (now.weekday >= 1 && now.weekday <= 5) ? 1 : 0;
-
-    final data = {
-      'kondisi_cuaca': _selectedCuaca,
-      'hari_kuliah': hariKuliah,
-    };
+    final data = <String, dynamic>{};
 
     final result = await ApiService.startSesi(data);
 
     if (mounted) {
-      setState(() => _isLoadingAction = false);
-
       if (result['success'] == true && result['data'] != null) {
         setState(() {
           _sesiAktif = result['data'];
           _startDurationTimer();
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result['message'] ?? 'Sesi berjualan dimulai!'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('selected_lokasi_id');
+
+        if (mounted) {
+          setState(() => _isLoadingAction = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result['message'] ?? 'Sesi berjualan dimulai!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
       } else {
+        setState(() => _isLoadingAction = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(result['message'] ?? 'Gagal memulai sesi'),
@@ -148,6 +230,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         setState(() {
           _sesiAktif = null;
           _elapsedDuration = Duration.zero;
+          _rekomendasiSelanjutnya = null;
         });
 
         // Tampilkan ringkasan
@@ -171,7 +254,8 @@ class _DashboardScreenState extends State<DashboardScreen>
     _durationTimer?.cancel();
 
     if (_sesiAktif != null && _sesiAktif!['waktu_mulai'] != null) {
-      final waktuMulai = DateTime.parse(_sesiAktif!['waktu_mulai']);
+      final strTime = _sesiAktif!['waktu_mulai'] as String;
+      final waktuMulai = DateTime.parse(strTime.endsWith('Z') ? strTime : '${strTime}Z');
       _elapsedDuration = DateTime.now().toUtc().difference(waktuMulai);
 
       _durationTimer = Timer.periodic(const Duration(seconds: 1), (_) {
@@ -206,8 +290,9 @@ class _DashboardScreenState extends State<DashboardScreen>
 
     String durasiText = '-';
     if (durasiTotal != null) {
-      final jam = (durasiTotal as num).floor();
-      final menit = ((durasiTotal - jam) * 60).round();
+      final totalMenit = (durasiTotal as num);
+      final jam = (totalMenit / 60).floor();
+      final menit = (totalMenit % 60).round();
       durasiText = '${jam}j ${menit}m';
     }
 
@@ -232,73 +317,98 @@ class _DashboardScreenState extends State<DashboardScreen>
               // Header
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.symmetric(vertical: 24),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Colors.green.shade600, Colors.green.shade800],
-                  ),
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(24),
-                    topRight: Radius.circular(24),
-                  ),
+                  color: Colors.green.shade600,
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(24)),
                 ),
-                child: const Column(
+                child: Column(
                   children: [
-                    Icon(Icons.check_circle, color: Colors.white, size: 48),
-                    SizedBox(height: 8),
-                    Text(
-                      'Sesi Selesai!',
+                    const Icon(Icons.celebration,
+                        color: Colors.white, size: 48),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Kerja Bagus Hari Ini!',
                       style: TextStyle(
-                        color: Colors.white,
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
                     ),
+                    const SizedBox(height: 4),
                     Text(
-                      'Ringkasan Penjualan Hari Ini',
-                      style: TextStyle(color: Colors.white70, fontSize: 14),
+                      result['message'] ?? 'Sesi telah diakhiri',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.white70,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
                   ],
                 ),
               ),
 
-              // Stats
+              // Ringkasan
               Padding(
                 padding: const EdgeInsets.all(24),
                 child: Column(
                   children: [
-                    _buildRingkasanItem(
-                      Icons.payments,
-                      'Total Pendapatan',
-                      'Rp ${NumberFormat('#,###').format(totalPendapatan)}',
-                      Colors.green,
+                    // Pendapatan Besar
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 16, horizontal: 20),
+                      decoration: BoxDecoration(
+                        color: Colors.green.shade100,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.green.shade200),
+                      ),
+                      child: Column(
+                        children: [
+                          Text('Total Pendapatan',
+                              style: TextStyle(
+                                  color: Colors.green.shade800,
+                                  fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Rp ${NumberFormat('#,###').format(totalPendapatan)}',
+                            style: TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.green.shade900,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
+
+                    // Grid stats
                     Row(
                       children: [
                         Expanded(
-                          child: _buildRingkasanCard(
-                            Icons.people,
-                            '$totalTransaksi',
+                          child: _buildRingkasanItem(
+                            Icons.receipt_long,
                             'Transaksi',
+                            '$totalTransaksi',
                             Colors.blue,
                           ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: _buildRingkasanCard(
+                          child: _buildRingkasanItem(
                             Icons.location_on,
-                            '$totalLokasi',
                             'Lokasi',
+                            '$totalLokasi',
                             Colors.orange,
                           ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: _buildRingkasanCard(
+                          child: _buildRingkasanItem(
                             Icons.timer,
-                            durasiText,
                             'Durasi',
+                            durasiText,
                             Colors.purple,
                           ),
                         ),
@@ -341,44 +451,6 @@ class _DashboardScreenState extends State<DashboardScreen>
   Widget _buildRingkasanItem(
       IconData icon, String label, String value, Color color) {
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.2),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: color, size: 24),
-          ),
-          const SizedBox(width: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label,
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-              const SizedBox(height: 2),
-              Text(value,
-                  style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: color)),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRingkasanCard(
-      IconData icon, String value, String label, Color color) {
-    return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
       decoration: BoxDecoration(
         color: color.withOpacity(0.08),
@@ -391,8 +463,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           Text(value,
               style: TextStyle(
                   fontWeight: FontWeight.bold, fontSize: 14, color: color)),
-          Text(label,
-              style: TextStyle(fontSize: 10, color: Colors.grey[600])),
+          Text(label, style: TextStyle(fontSize: 10, color: Colors.grey[600])),
         ],
       ),
     );
@@ -479,6 +550,9 @@ class _DashboardScreenState extends State<DashboardScreen>
 
                   // 4. Quick actions / Recommendation
                   _buildRecommendationCard(sesiAktif),
+
+                  // 5. Shortcut ke halaman penjualan
+                  if (sesiAktif) _buildShortcutPenjualan(),
                 ],
               ),
             ),
@@ -603,114 +677,45 @@ class _DashboardScreenState extends State<DashboardScreen>
         ),
       );
     } else {
-      // START BUTTON + Cuaca selector
-      return Column(
-        children: [
-          // Cuaca selector
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.grey.shade200),
+      // START BUTTON 
+      return SizedBox(
+        height: 64,
+        child: ElevatedButton.icon(
+          onPressed: _isLoadingAction ? null : _startBerjualan,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.green.shade600,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
             ),
-            child: Row(
-              children: [
-                Icon(Icons.cloud, color: Colors.blue.shade400, size: 22),
-                const SizedBox(width: 10),
-                Text('Cuaca:',
-                    style: TextStyle(
-                        color: Colors.grey[700], fontWeight: FontWeight.w500)),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: _selectedCuaca,
-                      isDense: true,
-                      items: _cuacaOptions.map((String value) {
-                        IconData icon;
-                        switch (value) {
-                          case 'cerah':
-                            icon = Icons.wb_sunny;
-                            break;
-                          case 'mendung':
-                            icon = Icons.cloud;
-                            break;
-                          case 'hujan':
-                            icon = Icons.grain;
-                            break;
-                          default:
-                            icon = Icons.wb_sunny;
-                        }
-                        return DropdownMenuItem<String>(
-                          value: value,
-                          child: Row(
-                            children: [
-                              Icon(icon, size: 18, color: Colors.grey[600]),
-                              const SizedBox(width: 8),
-                              Text(
-                                value[0].toUpperCase() + value.substring(1),
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.w600),
-                              ),
-                            ],
-                          ),
-                        );
-                      }).toList(),
-                      onChanged: (newValue) {
-                        setState(() {
-                          _selectedCuaca = newValue!;
-                        });
-                      },
-                    ),
-                  ),
-                ),
-              ],
+            elevation: 4,
+          ),
+          icon: _isLoadingAction
+              ? const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                      color: Colors.white, strokeWidth: 2.5),
+                )
+              : const Icon(Icons.play_circle_fill, size: 32),
+          label: Text(
+            _isLoadingAction ? 'Memulai...' : 'START BERJUALAN',
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1,
             ),
           ),
-
-          const SizedBox(height: 12),
-
-          // START button
-          SizedBox(
-            height: 64,
-            child: ElevatedButton.icon(
-              onPressed: _isLoadingAction ? null : _startBerjualan,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green.shade600,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                elevation: 4,
-              ),
-              icon: _isLoadingAction
-                  ? const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(
-                          color: Colors.white, strokeWidth: 2.5),
-                    )
-                  : const Icon(Icons.play_circle_fill, size: 32),
-              label: Text(
-                _isLoadingAction ? 'Memulai...' : 'START BERJUALAN',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1,
-                ),
-              ),
-            ),
-          ),
-        ],
+        ),
       );
     }
   }
 
   Widget _buildSesiInfo() {
-    final waktuMulai = _sesiAktif?['waktu_mulai'] != null
+    final strTime = _sesiAktif?['waktu_mulai'] as String?;
+    final waktuMulai = strTime != null
         ? DateFormat('HH:mm').format(
-            DateTime.parse(_sesiAktif!['waktu_mulai']).toLocal())
+            DateTime.parse(strTime.endsWith('Z') ? strTime : '${strTime}Z').toLocal())
         : '-';
     final totalTransaksi = _sesiAktif?['total_transaksi'] ?? 0;
     final totalPendapatan = _sesiAktif?['total_pendapatan'] ?? 0;
@@ -798,72 +803,251 @@ class _DashboardScreenState extends State<DashboardScreen>
         border: Border.all(color: Colors.grey.shade200),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.assistant, color: Colors.grey, size: 20),
+              Icon(Icons.psychology, color: Colors.blueGrey, size: 22),
               SizedBox(width: 8),
               Text(
-                "AI RECOMMENDATION",
+                "Q-LEARNING AI",
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.2,
-                  fontSize: 12,
-                  color: Colors.grey,
+                  fontSize: 13,
+                  color: Colors.blueGrey,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Text(
-            sesiAktif
-                ? 'Sesi berjualan aktif. Catat transaksi di halaman Penjualan.'
-                : 'Mulai sesi berjualan untuk mendapatkan rekomendasi rute.',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey[800],
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 20),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                if (widget.onNavigateToHistory != null) {
-                  widget.onNavigateToHistory!(1);
-                } else {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const OptimasiScreen(),
+          const SizedBox(height: 16),
+          
+          if (!sesiAktif)
+            Text(
+              'Mulai sesi berjualan untuk mendapatkan rekomendasi AI yang terus memandu Anda di setiap lokasi.',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey[700],
+              ),
+              textAlign: TextAlign.center,
+            )
+          else ...[
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.blue.shade100),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Lokasi Saat Ini:', style: TextStyle(fontSize: 12, color: Colors.blue.shade800)),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(Icons.location_on, color: Colors.blue.shade700, size: 18),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          _currentLokasiNama,
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blue.shade900),
+                        ),
+                      ),
+                    ],
+                  ),
+                  
+                  if (_rekomendasiSelanjutnya != null) ...[
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      child: Divider(),
                     ),
-                  );
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2E7D32),
-                foregroundColor: Colors.white,
-                padding:
-                    const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 0,
+                    Row(
+                      children: [
+                        Icon(
+                          _rekomendasiSelanjutnya!['keputusan'] == 'MOVE' ? Icons.directions_run : Icons.pan_tool,
+                          color: _rekomendasiSelanjutnya!['keputusan'] == 'MOVE' ? Colors.orange.shade700 : Colors.green.shade700,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Keputusan: ${_rekomendasiSelanjutnya!['keputusan']}',
+                          style: TextStyle(
+                            fontSize: 16, 
+                            fontWeight: FontWeight.bold,
+                            color: _rekomendasiSelanjutnya!['keputusan'] == 'MOVE' ? Colors.orange.shade800 : Colors.green.shade800,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    if (_rekomendasiSelanjutnya!['keputusan'] == 'MOVE')
+                      Text('Tujuan: ${_rekomendasiSelanjutnya!['nama_lokasi_tujuan']}', style: const TextStyle(fontWeight: FontWeight.w600)),
+                    Text('Durasi Rekomendasi: ${_rekomendasiSelanjutnya!['rekomendasi_durasi_menit']} menit'),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        _rekomendasiSelanjutnya!['alasan'] ?? '',
+                        style: TextStyle(fontSize: 13, color: Colors.grey.shade800, fontStyle: FontStyle.italic),
+                      ),
+                    ),
+                    if (_rekomendasiSelanjutnya!['keputusan'] == 'MOVE') ...[
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            final targetId = _rekomendasiSelanjutnya!['lokasi_tujuan_id'];
+                            final prefs = await SharedPreferences.getInstance();
+                            await prefs.setString('selected_lokasi_id', targetId.toString());
+                            
+                            setState(() {
+                              _currentLokasiId = targetId;
+                              _currentLokasiNama = _rekomendasiSelanjutnya!['nama_lokasi_tujuan'] ?? 'Lokasi Baru';
+                              _rekomendasiSelanjutnya = null;
+                            });
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Anda berpindah ke $_currentLokasiNama'), backgroundColor: Colors.green),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.orange.shade600,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: const Text('Konfirmasi Pindah Lokasi'),
+                        ),
+                      ),
+                    ]
+                  ],
+                ],
               ),
-              icon: const Text('🗺️', style: TextStyle(fontSize: 18)),
-              label: const Text(
-                'Lihat Rute Optimal Hari Ini',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
+            ),
+            
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton.icon(
+                onPressed: _isLoadingRekomendasi ? null : _mintaRekomendasiSelanjutnya,
+                icon: _isLoadingRekomendasi 
+                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    : const Icon(Icons.explore),
+                label: Text(
+                  _isLoadingRekomendasi ? 'Memproses AI...' : 'Minta Keputusan AI',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue.shade700,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
             ),
-          ),
+            
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () async {
+                  showDialog(
+                    context: context, 
+                    barrierDismissible: false,
+                    builder: (ctx) => const Center(child: CircularProgressIndicator())
+                  );
+                  final optRaw = await ApiService.getOptimasi();
+                  if (!mounted) return;
+                  Navigator.pop(context);
+                  
+                  if (optRaw['success'] == true) {
+                    final response = OptimasiResponse.fromJson(optRaw);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => RuteDetailScreen(result: response),
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Gagal mendapatkan rute detail.')),
+                    );
+                  }
+                },
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.grey.shade700,
+                  side: BorderSide(color: Colors.grey.shade300),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Lihat Detail Rute Full',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          ]
         ],
+      ),
+    );
+  }
+
+  Widget _buildShortcutPenjualan() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: InkWell(
+        onTap: () {
+          if (widget.onNavigateToHistory != null) {
+            // Index 2 is now PenjualanScreen after Rute was removed
+            widget.onNavigateToHistory!(2); 
+          }
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFFE8F5E9), Color(0xFFC8E6C9)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFA5D6A7), width: 1),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: const BoxDecoration(
+                  color: Color(0xFF2E7D32),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.monetization_on, color: Colors.white, size: 20),
+              ),
+              const SizedBox(width: 16),
+              const Expanded(
+                child: Text(
+                  'Mulai berjualan hari ini',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1B5E20),
+                  ),
+                ),
+              ),
+              const Icon(Icons.arrow_forward_ios, color: Color(0xFF2E7D32), size: 16),
+            ],
+          ),
+        ),
       ),
     );
   }
