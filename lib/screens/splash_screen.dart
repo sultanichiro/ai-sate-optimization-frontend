@@ -5,6 +5,7 @@ import '../providers/app_data_provider.dart';
 import '../services/api_service.dart';
 import 'main_screen.dart';
 import 'login_screen.dart';
+import 'onboarding_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -33,6 +34,7 @@ class _SplashScreenState extends State<SplashScreen> {
     final token = await ApiService.getToken();
     final prefs = await SharedPreferences.getInstance();
     final lastActiveStr = prefs.getString('last_active_time');
+    final isFirstTime = prefs.getBool('is_first_time') ?? true;
 
     bool sessionExpired = false;
 
@@ -76,10 +78,18 @@ class _SplashScreenState extends State<SplashScreen> {
             ),
           );
         }
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const LoginScreen()),
-        );
+        
+        if (isFirstTime) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const OnboardingScreen()),
+          );
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const LoginScreen()),
+          );
+        }
       }
     }
   }

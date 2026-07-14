@@ -5,8 +5,9 @@ import '../services/api_service.dart';
 
 class EditLokasiScreen extends StatefulWidget {
   final Map<String, dynamic> lokasi;
+  final bool hasDefault;
 
-  const EditLokasiScreen({super.key, required this.lokasi});
+  const EditLokasiScreen({super.key, required this.lokasi, this.hasDefault = false});
 
   @override
   State<EditLokasiScreen> createState() => _EditLokasiScreenState();
@@ -20,6 +21,7 @@ class _EditLokasiScreenState extends State<EditLokasiScreen> {
   
   bool _isLoading = false;
   bool _isFetchingGps = false;
+  bool _isDefault = false;
 
   @override
   void initState() {
@@ -27,6 +29,7 @@ class _EditLokasiScreenState extends State<EditLokasiScreen> {
     _namaController = TextEditingController(text: widget.lokasi['nama']?.toString());
     _latitudeController = TextEditingController(text: widget.lokasi['latitude']?.toString());
     _longitudeController = TextEditingController(text: widget.lokasi['longitude']?.toString());
+    _isDefault = widget.lokasi['is_default'] == true;
   }
 
   @override
@@ -112,12 +115,20 @@ class _EditLokasiScreenState extends State<EditLokasiScreen> {
 
   Future<void> _submit() async {
     if (_formKey.currentState!.validate()) {
+      if (_latitudeController.text.isEmpty || _longitudeController.text.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Silakan ambil lokasi GPS terlebih dahulu dengan menekan tombol di atas.'), backgroundColor: Colors.orange),
+        );
+        return;
+      }
+      
       setState(() => _isLoading = true);
       
       final data = {
         'nama': _namaController.text.trim(),
         'latitude': double.tryParse(_latitudeController.text) ?? 0.0,
         'longitude': double.tryParse(_longitudeController.text) ?? 0.0,
+        'is_default': _isDefault,
       };
       
       final id = widget.lokasi['id'].toString();
@@ -208,43 +219,29 @@ class _EditLokasiScreenState extends State<EditLokasiScreen> {
                     return null;
                   },
                 ),
+                
                 const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _latitudeController,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-                        decoration: InputDecoration(
-                          labelText: 'Latitude',
-                          prefixIcon: const Icon(Icons.explore),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) return 'Harus diisi';
-                          if (double.tryParse(value) == null) return 'Format salah';
-                          return null;
-                        },
-                      ),
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey.shade300),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: CheckboxListTile(
+                    title: const Text('Jadikan Lokasi Default', style: TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: Text(
+                      (widget.hasDefault && !_isDefault && widget.lokasi['is_default'] != true) 
+                          ? 'Lokasi default sudah ada. Hapus centang di lokasi default sebelumnya terlebih dahulu.' 
+                          : 'Akan digunakan sebagai titik mulai rute optimal.',
+                      style: TextStyle(fontSize: 12, color: (widget.hasDefault && !_isDefault && widget.lokasi['is_default'] != true) ? Colors.red : Colors.grey),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _longitudeController,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-                        decoration: InputDecoration(
-                          labelText: 'Longitude',
-                          prefixIcon: const Icon(Icons.explore),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) return 'Harus diisi';
-                          if (double.tryParse(value) == null) return 'Format salah';
-                          return null;
-                        },
-                      ),
-                    ),
-                  ],
+                    value: _isDefault,
+                    onChanged: (widget.hasDefault && !_isDefault && widget.lokasi['is_default'] != true) ? null : (bool? value) {
+                      setState(() {
+                        _isDefault = value ?? false;
+                      });
+                    },
+                    controlAffinity: ListTileControlAffinity.leading,
+                  ),
                 ),
                 
                 const SizedBox(height: 48),

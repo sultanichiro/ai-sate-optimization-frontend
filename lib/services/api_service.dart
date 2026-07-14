@@ -228,15 +228,11 @@ class ApiService {
     int limit = 20,
     int offset = 0,
     int? lokasiId,
-    int? hariKuliah,
   }) async {
     String url = '$baseUrl/penjualan?limit=$limit&offset=$offset';
 
     if (lokasiId != null) {
       url += '&lokasi_id=$lokasiId';
-    }
-    if (hariKuliah != null) {
-      url += '&hari_kuliah=$hariKuliah';
     }
 
     try {
@@ -268,6 +264,34 @@ class ApiService {
     try {
       final response = await http.get(
         Uri.parse(url),
+        headers: await _getHeaders(),
+      );
+      return _handleResponse(response);
+    } catch (e) {
+      return {'success': false, 'message': 'Terjadi kesalahan jaringan: $e'};
+    }
+  }
+
+  // --- SESI PENJUALAN (HISTORY) ---
+  static Future<Map<String, dynamic>> getSesi({
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/sesi?limit=$limit&offset=$offset'),
+        headers: await _getHeaders(),
+      );
+      return _handleResponse(response);
+    } catch (e) {
+      return {'success': false, 'message': 'Terjadi kesalahan jaringan: $e'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getSesiDetail(int sesiId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/sesi/$sesiId'),
         headers: await _getHeaders(),
       );
       return _handleResponse(response);

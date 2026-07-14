@@ -107,7 +107,10 @@ class _LokasiScreenState extends State<LokasiScreen> {
           // Navigasi ke tambah lokasi dan fetch ulang jika kembali dengan true
           final result = await Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const AddLokasiScreen()),
+            MaterialPageRoute(builder: (context) => AddLokasiScreen(
+              isFirstLocation: _lokasiList.isEmpty,
+              hasDefault: _lokasiList.any((l) => l['is_default'] == true),
+            )),
           );
           if (result == true) {
             _fetchLokasi();
@@ -172,18 +175,30 @@ class _LokasiScreenState extends State<LokasiScreen> {
                 backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
                 child: Icon(Icons.storefront, color: Theme.of(context).primaryColor),
               ),
-              title: Text(
-                lokasi['nama'] ?? 'Lokasi Tanpa Nama',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              title: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      lokasi['nama'] ?? 'Lokasi Tanpa Nama',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (lokasi['is_default'] == true)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.green),
+                      ),
+                      child: const Text(
+                        'Default',
+                        style: TextStyle(color: Colors.green, fontSize: 10, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                ],
               ),
-              subtitle: Padding(
-                padding: const EdgeInsets.only(top: 4.0),
-                child: Text(
-                  'Lat: ${lokasi['latitude']}\nLng: ${lokasi['longitude']}',
-                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                ),
-              ),
-              isThreeLine: true,
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -192,7 +207,10 @@ class _LokasiScreenState extends State<LokasiScreen> {
                     onPressed: () async {
                       final result = await Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => EditLokasiScreen(lokasi: lokasi)),
+                        MaterialPageRoute(builder: (context) => EditLokasiScreen(
+                          lokasi: lokasi,
+                          hasDefault: _lokasiList.any((l) => l['is_default'] == true),
+                        )),
                       );
                       if (result == true) {
                         _fetchLokasi();

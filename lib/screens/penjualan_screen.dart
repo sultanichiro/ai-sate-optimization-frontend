@@ -234,7 +234,7 @@ class _PenjualanScreenState extends State<PenjualanScreen> {
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
         title: const Text(
-          'Penjualan & AI',
+          'Transaksi Penjualan',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         elevation: 0,
@@ -582,7 +582,7 @@ class _PenjualanScreenState extends State<PenjualanScreen> {
               const SizedBox(width: 12),
               const Expanded(
                 child: Text(
-                  "AI Q-Learning",
+                  "Asisten Pintar",
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     letterSpacing: 0.5,
@@ -597,7 +597,7 @@ class _PenjualanScreenState extends State<PenjualanScreen> {
 
           if (_rekomendasiSelanjutnya == null) ...[
             Text(
-              'Gunakan AI untuk menentukan apakah Anda sebaiknya tetap di lokasi ini atau pindah ke lokasi lain yang lebih menguntungkan.',
+              'Gunakan asisten pintar untuk menentukan apakah Anda sebaiknya tetap di lokasi ini atau pindah ke lokasi lain yang lebih menguntungkan.',
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey.shade600,

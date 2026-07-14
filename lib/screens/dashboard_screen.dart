@@ -43,10 +43,10 @@ class _DashboardScreenState extends State<DashboardScreen>
     final result = await ApiService.getLokasi();
     if (result['success'] == true && result['data'] != null) {
       final List<dynamic> lokasiList = result['data'];
-      
+
       final prefs = await SharedPreferences.getInstance();
       final savedLokasiId = prefs.getString('selected_lokasi_id');
-      
+
       Map<String, dynamic>? selectedLokasi;
       if (savedLokasiId != null) {
         selectedLokasi = lokasiList.firstWhere(
@@ -54,18 +54,20 @@ class _DashboardScreenState extends State<DashboardScreen>
           orElse: () => null,
         );
       }
-      
+
       if (selectedLokasi == null) {
         selectedLokasi = lokasiList.firstWhere(
-          (loc) => loc['nama']?.toString().toLowerCase().contains('basecamp') == true,
+          (loc) =>
+              loc['nama']?.toString().toLowerCase().contains('basecamp') ==
+              true,
           orElse: () => null,
         );
       }
-      
+
       if (selectedLokasi == null && lokasiList.isNotEmpty) {
         selectedLokasi = lokasiList.first;
       }
-      
+
       if (selectedLokasi != null) {
         if (mounted) {
           setState(() {
@@ -80,13 +82,18 @@ class _DashboardScreenState extends State<DashboardScreen>
   Future<void> _mintaRekomendasiSelanjutnya() async {
     if (_currentLokasiId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Lokasi saat ini belum diketahui (Basecamp tidak ditemukan).'), backgroundColor: Colors.orange),
+        const SnackBar(
+          content: Text(
+            'Lokasi saat ini belum diketahui (Basecamp tidak ditemukan).',
+          ),
+          backgroundColor: Colors.orange,
+        ),
       );
       return;
     }
 
     setState(() => _isLoadingRekomendasi = true);
-    
+
     // Perkirakan sisa waktu, asumsi 8 jam (480 menit) dari waktu mulai. Jika tidak, pakai 120 menit default.
     int sisaWaktu = 120;
     if (_sesiAktif != null && _sesiAktif!['waktu_mulai'] != null) {
@@ -111,7 +118,12 @@ class _DashboardScreenState extends State<DashboardScreen>
         });
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result['message'] ?? 'Gagal mendapatkan rekomendasi.'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text(
+              result['message'] ?? 'Gagal mendapatkan rekomendasi.',
+            ),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
@@ -157,9 +169,11 @@ class _DashboardScreenState extends State<DashboardScreen>
           _sesiAktif = result['data'];
           _startDurationTimer();
         });
-        
+
         final prefs = await SharedPreferences.getInstance();
         await prefs.remove('selected_lokasi_id');
+
+        await _fetchInitialLokasi();
 
         if (mounted) {
           setState(() => _isLoadingAction = false);
@@ -255,7 +269,9 @@ class _DashboardScreenState extends State<DashboardScreen>
 
     if (_sesiAktif != null && _sesiAktif!['waktu_mulai'] != null) {
       final strTime = _sesiAktif!['waktu_mulai'] as String;
-      final waktuMulai = DateTime.parse(strTime.endsWith('Z') ? strTime : '${strTime}Z');
+      final waktuMulai = DateTime.parse(
+        strTime.endsWith('Z') ? strTime : '${strTime}Z',
+      );
       _elapsedDuration = DateTime.now().toUtc().difference(waktuMulai);
 
       _durationTimer = Timer.periodic(const Duration(seconds: 1), (_) {
@@ -320,13 +336,17 @@ class _DashboardScreenState extends State<DashboardScreen>
                 padding: const EdgeInsets.symmetric(vertical: 24),
                 decoration: BoxDecoration(
                   color: Colors.green.shade600,
-                  borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(24)),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(24),
+                  ),
                 ),
                 child: Column(
                   children: [
-                    const Icon(Icons.celebration,
-                        color: Colors.white, size: 48),
+                    const Icon(
+                      Icons.celebration,
+                      color: Colors.white,
+                      size: 48,
+                    ),
                     const SizedBox(height: 12),
                     const Text(
                       'Kerja Bagus Hari Ini!',
@@ -357,7 +377,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                     // Pendapatan Besar
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          vertical: 16, horizontal: 20),
+                        vertical: 16,
+                        horizontal: 20,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.green.shade100,
                         borderRadius: BorderRadius.circular(16),
@@ -365,10 +387,13 @@ class _DashboardScreenState extends State<DashboardScreen>
                       ),
                       child: Column(
                         children: [
-                          Text('Total Pendapatan',
-                              style: TextStyle(
-                                  color: Colors.green.shade800,
-                                  fontWeight: FontWeight.bold)),
+                          Text(
+                            'Total Pendapatan',
+                            style: TextStyle(
+                              color: Colors.green.shade800,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                           const SizedBox(height: 4),
                           Text(
                             'Rp ${NumberFormat('#,###').format(totalPendapatan)}',
@@ -435,8 +460,10 @@ class _DashboardScreenState extends State<DashboardScreen>
                     ),
                     child: const Text(
                       'Tutup',
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
@@ -449,7 +476,11 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   Widget _buildRingkasanItem(
-      IconData icon, String label, String value, Color color) {
+    IconData icon,
+    String label,
+    String value,
+    Color color,
+  ) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
       decoration: BoxDecoration(
@@ -460,9 +491,14 @@ class _DashboardScreenState extends State<DashboardScreen>
         children: [
           Icon(icon, color: color, size: 20),
           const SizedBox(height: 4),
-          Text(value,
-              style: TextStyle(
-                  fontWeight: FontWeight.bold, fontSize: 14, color: color)),
+          Text(
+            value,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+              color: color,
+            ),
+          ),
           Text(label, style: TextStyle(fontSize: 10, color: Colors.grey[600])),
         ],
       ),
@@ -480,7 +516,10 @@ class _DashboardScreenState extends State<DashboardScreen>
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: const Text("Beranda"),
+        title: const Text(
+          "Beranda",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -509,7 +548,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                         Navigator.pushAndRemoveUntil(
                           context,
                           MaterialPageRoute(
-                              builder: (context) => const LoginScreen()),
+                            builder: (context) => const LoginScreen(),
+                          ),
                           (route) => false,
                         );
                       },
@@ -577,8 +617,9 @@ class _DashboardScreenState extends State<DashboardScreen>
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: (sesiAktif ? Colors.green : Colors.blueGrey)
-                .withOpacity(0.3),
+            color: (sesiAktif ? Colors.green : Colors.blueGrey).withOpacity(
+              0.3,
+            ),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -663,7 +704,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                   width: 24,
                   height: 24,
                   child: CircularProgressIndicator(
-                      color: Colors.white, strokeWidth: 2.5),
+                    color: Colors.white,
+                    strokeWidth: 2.5,
+                  ),
                 )
               : const Icon(Icons.stop_circle, size: 32),
           label: Text(
@@ -677,7 +720,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         ),
       );
     } else {
-      // START BUTTON 
+      // START BUTTON
       return SizedBox(
         height: 64,
         child: ElevatedButton.icon(
@@ -695,7 +738,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                   width: 24,
                   height: 24,
                   child: CircularProgressIndicator(
-                      color: Colors.white, strokeWidth: 2.5),
+                    color: Colors.white,
+                    strokeWidth: 2.5,
+                  ),
                 )
               : const Icon(Icons.play_circle_fill, size: 32),
           label: Text(
@@ -715,7 +760,10 @@ class _DashboardScreenState extends State<DashboardScreen>
     final strTime = _sesiAktif?['waktu_mulai'] as String?;
     final waktuMulai = strTime != null
         ? DateFormat('HH:mm').format(
-            DateTime.parse(strTime.endsWith('Z') ? strTime : '${strTime}Z').toLocal())
+            DateTime.parse(
+              strTime.endsWith('Z') ? strTime : '${strTime}Z',
+            ).toLocal(),
+          )
         : '-';
     final totalTransaksi = _sesiAktif?['total_transaksi'] ?? 0;
     final totalPendapatan = _sesiAktif?['total_pendapatan'] ?? 0;
@@ -753,7 +801,10 @@ class _DashboardScreenState extends State<DashboardScreen>
               ),
               Expanded(
                 child: _buildInfoChip(
-                    Icons.people, 'Transaksi', '$totalTransaksi'),
+                  Icons.people,
+                  'Transaksi',
+                  '$totalTransaksi',
+                ),
               ),
               Expanded(
                 child: _buildInfoChip(
@@ -785,11 +836,12 @@ class _DashboardScreenState extends State<DashboardScreen>
       children: [
         Icon(icon, size: 18, color: Colors.grey[500]),
         const SizedBox(height: 4),
-        Text(value,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-            textAlign: TextAlign.center),
-        Text(label,
-            style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+        Text(
+          value,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+          textAlign: TextAlign.center,
+        ),
+        Text(label, style: TextStyle(fontSize: 11, color: Colors.grey[500])),
       ],
     );
   }
@@ -811,7 +863,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               Icon(Icons.psychology, color: Colors.blueGrey, size: 22),
               SizedBox(width: 8),
               Text(
-                "Q-LEARNING AI",
+                "ASISTEN PINTAR",
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.2,
@@ -822,10 +874,10 @@ class _DashboardScreenState extends State<DashboardScreen>
             ],
           ),
           const SizedBox(height: 16),
-          
+
           if (!sesiAktif)
             Text(
-              'Mulai sesi berjualan untuk mendapatkan rekomendasi AI yang terus memandu Anda di setiap lokasi.',
+              'Mulai sesi berjualan untuk mendapatkan rekomendasi pintar yang terus memandu Anda di setiap lokasi.',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
@@ -844,21 +896,32 @@ class _DashboardScreenState extends State<DashboardScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Lokasi Saat Ini:', style: TextStyle(fontSize: 12, color: Colors.blue.shade800)),
+                  Text(
+                    'Lokasi Saat Ini:',
+                    style: TextStyle(fontSize: 12, color: Colors.blue.shade800),
+                  ),
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Icon(Icons.location_on, color: Colors.blue.shade700, size: 18),
+                      Icon(
+                        Icons.location_on,
+                        color: Colors.blue.shade700,
+                        size: 18,
+                      ),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
                           _currentLokasiNama,
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blue.shade900),
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue.shade900,
+                          ),
                         ),
                       ),
                     ],
                   ),
-                  
+
                   if (_rekomendasiSelanjutnya != null) ...[
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 12),
@@ -867,25 +930,37 @@ class _DashboardScreenState extends State<DashboardScreen>
                     Row(
                       children: [
                         Icon(
-                          _rekomendasiSelanjutnya!['keputusan'] == 'MOVE' ? Icons.directions_run : Icons.pan_tool,
-                          color: _rekomendasiSelanjutnya!['keputusan'] == 'MOVE' ? Colors.orange.shade700 : Colors.green.shade700,
+                          _rekomendasiSelanjutnya!['keputusan'] == 'MOVE'
+                              ? Icons.directions_run
+                              : Icons.pan_tool,
+                          color: _rekomendasiSelanjutnya!['keputusan'] == 'MOVE'
+                              ? Colors.orange.shade700
+                              : Colors.green.shade700,
                           size: 20,
                         ),
                         const SizedBox(width: 8),
                         Text(
                           'Keputusan: ${_rekomendasiSelanjutnya!['keputusan']}',
                           style: TextStyle(
-                            fontSize: 16, 
+                            fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: _rekomendasiSelanjutnya!['keputusan'] == 'MOVE' ? Colors.orange.shade800 : Colors.green.shade800,
+                            color:
+                                _rekomendasiSelanjutnya!['keputusan'] == 'MOVE'
+                                ? Colors.orange.shade800
+                                : Colors.green.shade800,
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 8),
                     if (_rekomendasiSelanjutnya!['keputusan'] == 'MOVE')
-                      Text('Tujuan: ${_rekomendasiSelanjutnya!['nama_lokasi_tujuan']}', style: const TextStyle(fontWeight: FontWeight.w600)),
-                    Text('Durasi Rekomendasi: ${_rekomendasiSelanjutnya!['rekomendasi_durasi_menit']} menit'),
+                      Text(
+                        'Tujuan: ${_rekomendasiSelanjutnya!['nama_lokasi_tujuan']}',
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    Text(
+                      'Durasi Rekomendasi: ${_rekomendasiSelanjutnya!['rekomendasi_durasi_menit']} menit',
+                    ),
                     const SizedBox(height: 8),
                     Container(
                       padding: const EdgeInsets.all(10),
@@ -895,7 +970,11 @@ class _DashboardScreenState extends State<DashboardScreen>
                       ),
                       child: Text(
                         _rekomendasiSelanjutnya!['alasan'] ?? '',
-                        style: TextStyle(fontSize: 13, color: Colors.grey.shade800, fontStyle: FontStyle.italic),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey.shade800,
+                          fontStyle: FontStyle.italic,
+                        ),
                       ),
                     ),
                     if (_rekomendasiSelanjutnya!['keputusan'] == 'MOVE') ...[
@@ -904,79 +983,109 @@ class _DashboardScreenState extends State<DashboardScreen>
                         width: double.infinity,
                         child: ElevatedButton(
                           onPressed: () async {
-                            final targetId = _rekomendasiSelanjutnya!['lokasi_tujuan_id'];
+                            final targetId =
+                                _rekomendasiSelanjutnya!['lokasi_tujuan_id'];
                             final prefs = await SharedPreferences.getInstance();
-                            await prefs.setString('selected_lokasi_id', targetId.toString());
-                            
+                            await prefs.setString(
+                              'selected_lokasi_id',
+                              targetId.toString(),
+                            );
+
                             setState(() {
                               _currentLokasiId = targetId;
-                              _currentLokasiNama = _rekomendasiSelanjutnya!['nama_lokasi_tujuan'] ?? 'Lokasi Baru';
+                              _currentLokasiNama =
+                                  _rekomendasiSelanjutnya!['nama_lokasi_tujuan'] ??
+                                  'Lokasi Baru';
                               _rekomendasiSelanjutnya = null;
                             });
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Anda berpindah ke $_currentLokasiNama'), backgroundColor: Colors.green),
+                              SnackBar(
+                                content: Text(
+                                  'Anda berpindah ke $_currentLokasiNama',
+                                ),
+                                backgroundColor: Colors.green,
+                              ),
                             );
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.orange.shade600,
                             foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
                           child: const Text('Konfirmasi Pindah Lokasi'),
                         ),
                       ),
-                    ]
+                    ],
                   ],
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
               height: 48,
               child: ElevatedButton.icon(
-                onPressed: _isLoadingRekomendasi ? null : _mintaRekomendasiSelanjutnya,
-                icon: _isLoadingRekomendasi 
-                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                onPressed: _isLoadingRekomendasi
+                    ? null
+                    : _mintaRekomendasiSelanjutnya,
+                icon: _isLoadingRekomendasi
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
                     : const Icon(Icons.explore),
                 label: Text(
-                  _isLoadingRekomendasi ? 'Memproses AI...' : 'Minta Keputusan AI',
+                  _isLoadingRekomendasi
+                      ? 'Ajo mencari lokasi'
+                      : 'Minta Keputusan Ajo',
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue.shade700,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
               child: OutlinedButton(
                 onPressed: () async {
                   showDialog(
-                    context: context, 
+                    context: context,
                     barrierDismissible: false,
-                    builder: (ctx) => const Center(child: CircularProgressIndicator())
+                    builder: (ctx) =>
+                        const Center(child: CircularProgressIndicator()),
                   );
                   final optRaw = await ApiService.getOptimasi();
                   if (!mounted) return;
                   Navigator.pop(context);
-                  
+
                   if (optRaw['success'] == true) {
                     final response = OptimasiResponse.fromJson(optRaw);
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => RuteDetailScreen(result: response),
+                        builder: (context) =>
+                            RuteDetailScreen(result: response),
                       ),
                     );
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Gagal mendapatkan rute detail.')),
+                      const SnackBar(
+                        content: Text('Gagal mendapatkan rute detail.'),
+                      ),
                     );
                   }
                 },
@@ -989,13 +1098,13 @@ class _DashboardScreenState extends State<DashboardScreen>
                   ),
                 ),
                 child: const Text(
-                  'Lihat Detail Rute Full',
+                  'Minta Ajo Carikan Rute',
                   style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                   textAlign: TextAlign.center,
                 ),
               ),
             ),
-          ]
+          ],
         ],
       ),
     );
@@ -1008,7 +1117,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         onTap: () {
           if (widget.onNavigateToHistory != null) {
             // Index 2 is now PenjualanScreen after Rute was removed
-            widget.onNavigateToHistory!(2); 
+            widget.onNavigateToHistory!(2);
           }
         },
         borderRadius: BorderRadius.circular(16),
@@ -1031,7 +1140,11 @@ class _DashboardScreenState extends State<DashboardScreen>
                   color: Color(0xFF2E7D32),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.monetization_on, color: Colors.white, size: 20),
+                child: const Icon(
+                  Icons.monetization_on,
+                  color: Colors.white,
+                  size: 20,
+                ),
               ),
               const SizedBox(width: 16),
               const Expanded(
@@ -1044,7 +1157,11 @@ class _DashboardScreenState extends State<DashboardScreen>
                   ),
                 ),
               ),
-              const Icon(Icons.arrow_forward_ios, color: Color(0xFF2E7D32), size: 16),
+              const Icon(
+                Icons.arrow_forward_ios,
+                color: Color(0xFF2E7D32),
+                size: 16,
+              ),
             ],
           ),
         ),

@@ -4,7 +4,14 @@ import 'package:geocoding/geocoding.dart';
 import '../services/api_service.dart';
 
 class AddLokasiScreen extends StatefulWidget {
-  const AddLokasiScreen({super.key});
+  final bool isFirstLocation;
+  final bool hasDefault;
+  
+  const AddLokasiScreen({
+    super.key, 
+    this.isFirstLocation = false, 
+    this.hasDefault = false
+  });
 
   @override
   State<AddLokasiScreen> createState() => _AddLokasiScreenState();
@@ -18,6 +25,15 @@ class _AddLokasiScreenState extends State<AddLokasiScreen> {
   
   bool _isLoading = false;
   bool _isFetchingGps = false;
+  bool _isDefault = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.isFirstLocation) {
+      _isDefault = true;
+    }
+  }
 
   @override
   void dispose() {
@@ -106,12 +122,20 @@ class _AddLokasiScreenState extends State<AddLokasiScreen> {
 
   Future<void> _submit() async {
     if (_formKey.currentState!.validate()) {
+      if (_latitudeController.text.isEmpty || _longitudeController.text.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Silakan ambil lokasi GPS terlebih dahulu dengan menekan tombol di atas.'), backgroundColor: Colors.orange),
+        );
+        return;
+      }
+
       setState(() => _isLoading = true);
       
       final data = {
         'nama': _namaController.text.trim(),
         'latitude': double.tryParse(_latitudeController.text) ?? 0.0,
         'longitude': double.tryParse(_longitudeController.text) ?? 0.0,
+        'is_default': _isDefault,
       };
       
       final result = await ApiService.addLokasi(data);
@@ -188,16 +212,6 @@ class _AddLokasiScreenState extends State<AddLokasiScreen> {
                 ),
                 
                 const SizedBox(height: 32),
-                const Row(
-                  children: [
-                    Expanded(child: Divider()),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: Text('ATAU ISI MANUAL', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 12)),
-                    ),
-                    Expanded(child: Divider()),
-                  ],
-                ),
                 const SizedBox(height: 32),
                 
                 TextFormField(
@@ -212,43 +226,31 @@ class _AddLokasiScreenState extends State<AddLokasiScreen> {
                     return null;
                   },
                 ),
+                
                 const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _latitudeController,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-                        decoration: InputDecoration(
-                          labelText: 'Latitude',
-                          prefixIcon: const Icon(Icons.explore),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) return 'Harus diisi';
-                          if (double.tryParse(value) == null) return 'Format salah';
-                          return null;
-                        },
-                      ),
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey.shade300),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: CheckboxListTile(
+                    title: const Text('Jadikan Lokasi Default', style: TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: Text(
+                      widget.isFirstLocation 
+                          ? 'Lokasi pertama otomatis menjadi default.' 
+                          : (widget.hasDefault && !_isDefault) 
+                              ? 'Lokasi default sudah ada. Hapus centang di lokasi default sebelumnya terlebih dahulu.' 
+                              : 'Akan digunakan sebagai titik mulai rute optimal.',
+                      style: TextStyle(fontSize: 12, color: (widget.hasDefault && !widget.isFirstLocation && !_isDefault) ? Colors.red : Colors.grey),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _longitudeController,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-                        decoration: InputDecoration(
-                          labelText: 'Longitude',
-                          prefixIcon: const Icon(Icons.explore),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) return 'Harus diisi';
-                          if (double.tryParse(value) == null) return 'Format salah';
-                          return null;
-                        },
-                      ),
-                    ),
-                  ],
+                    value: _isDefault,
+                    onChanged: (widget.isFirstLocation || (widget.hasDefault && !_isDefault)) ? null : (bool? value) {
+                      setState(() {
+                        _isDefault = value ?? false;
+                      });
+                    },
+                    controlAffinity: ListTileControlAffinity.leading,
+                  ),
                 ),
                 
                 const SizedBox(height: 48),
