@@ -12,7 +12,7 @@ class HistoryScreen extends StatelessWidget {
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
         title: const Text(
-          "Riwayat Transaksi",
+          "Riwayat Penjualan",
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
@@ -110,7 +110,6 @@ class _TransactionHistoryListState extends State<TransactionHistoryList> {
         }
       }
 
-
       // Filter Weather
       if (_selectedWeather != null && _selectedWeather != 'Semua') {
         final cuaca = item['kondisi_cuaca']?.toString().toLowerCase() ?? '';
@@ -180,8 +179,7 @@ class _TransactionHistoryListState extends State<TransactionHistoryList> {
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              if (_selectedDate != null ||
-                  _selectedWeather != null)
+              if (_selectedDate != null || _selectedWeather != null)
                 InkWell(
                   onTap: _resetFilters,
                   child: Container(

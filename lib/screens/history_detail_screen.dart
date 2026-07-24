@@ -83,7 +83,7 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Detail Sesi Penjualan")),
+      appBar: AppBar(title: const Text("Detail Penjualan")),
       body: _buildBody(),
     );
   }
@@ -230,23 +230,27 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
 
         final waktuMulai = item['waktu_mulai']?.toString() ?? '-';
         final waktuSelesai = item['waktu_selesai']?.toString();
-        
+
         String formattedTime = waktuMulai;
         try {
           final dtMulai = DateTime.parse(waktuMulai);
           final jamMulai = DateFormat('HH.mm').format(dtMulai);
-          
+
           String jamSelesai = "Sekarang";
-          if (waktuSelesai != null && waktuSelesai != 'null' && waktuSelesai != '-') {
+          if (waktuSelesai != null &&
+              waktuSelesai != 'null' &&
+              waktuSelesai != '-') {
             final dtSelesai = DateTime.parse(waktuSelesai);
             jamSelesai = DateFormat('HH.mm').format(dtSelesai);
           }
-          
+
           formattedTime = "$jamMulai - $jamSelesai";
         } catch (_) {}
 
         final totalPendapatan = item['total_pendapatan'] ?? 0;
         final durasi = item['durasi_mangkal'] ?? 0.0;
+        final sumberKunjungan = item['sumber_kunjungan']?.toString() ?? 'mandiri';
+        final jumlahTerjual = item['jumlah_terjual'];
 
         return Card(
           elevation: 2,
@@ -309,6 +313,46 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
                     ),
                   ],
                 ),
+                const SizedBox(height: 12),
+                // Badge sumber kunjungan
+                Row(
+                  children: [
+                    _buildSumberBadge(sumberKunjungan),
+                    if (jumlahTerjual != null) ...[  
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade50,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.blue.shade100),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.shopping_cart,
+                              size: 11,
+                              color: Colors.blue.shade700,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '$jumlahTerjual terjual',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ],
             ),
           ),
@@ -331,6 +375,39 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildSumberBadge(String sumber) {
+    final bool isReko = sumber == 'rekomendasi';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: isReko ? Colors.purple.shade50 : Colors.teal.shade50,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isReko ? Colors.purple.shade200 : Colors.teal.shade200,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isReko ? Icons.auto_awesome : Icons.person,
+            size: 11,
+            color: isReko ? Colors.purple.shade700 : Colors.teal.shade700,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            isReko ? 'Rekomendasi AI' : 'Mandiri',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: isReko ? Colors.purple.shade700 : Colors.teal.shade700,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

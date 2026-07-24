@@ -25,6 +25,7 @@ class _PenjualanScreenState extends State<PenjualanScreen> {
 
   List<dynamic> _lokasiList = [];
   String? _selectedLokasiId;
+  String _sumberKunjungan = 'mandiri'; // 'mandiri' atau 'rekomendasi'
 
   // Q-Learning AI State
   Map<String, dynamic>? _rekomendasiSelanjutnya;
@@ -70,13 +71,11 @@ class _PenjualanScreenState extends State<PenjualanScreen> {
           if (savedLokasiId != null) {
             _selectedLokasiId = savedLokasiId;
           } else {
-            final basecamp = _lokasiList.firstWhere(
-              (loc) =>
-                  loc['nama']?.toString().toLowerCase().contains('basecamp') ==
-                  true,
+            final defaultLokasi = _lokasiList.firstWhere(
+              (loc) => loc['is_default'] == true,
               orElse: () => _lokasiList.first,
             );
-            _selectedLokasiId = basecamp['id'].toString();
+            _selectedLokasiId = defaultLokasi['id'].toString();
           }
         }
       });
@@ -143,20 +142,32 @@ class _PenjualanScreenState extends State<PenjualanScreen> {
     }
   }
 
-  Future<void> _pindahLokasiKeBackend(String lokasiId) async {
+  Future<void> _pindahLokasiKeBackend(
+    String lokasiId, {
+    String sumber = 'mandiri',
+  }) async {
     if (!_isSesiAktif) return;
 
-    final data = {'lokasi_id': int.parse(lokasiId)};
+    final data = {
+      'lokasi_id': int.parse(lokasiId),
+      'sumber_kunjungan': sumber,
+    };
 
     final result = await ApiService.pindahLokasi(data);
 
     if (mounted) {
       if (result['success'] == true) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Lokasi berhasil diperbarui di sistem'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 1),
+          SnackBar(
+            content: Text(
+              sumber == 'rekomendasi'
+                  ? '✨ Pindah lokasi sesuai rekomendasi AI'
+                  : 'Lokasi berhasil diperbarui di sistem',
+            ),
+            backgroundColor: sumber == 'rekomendasi'
+                ? Colors.purple.shade600
+                : Colors.green,
+            duration: const Duration(seconds: 2),
           ),
         );
       } else {
@@ -166,7 +177,7 @@ class _PenjualanScreenState extends State<PenjualanScreen> {
               result['message'] ?? 'Gagal memperbarui lokasi di sistem',
             ),
             backgroundColor: Colors.orange,
-            duration: Duration(seconds: 2),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -199,6 +210,7 @@ class _PenjualanScreenState extends State<PenjualanScreen> {
       final data = {
         'lokasi_id': int.parse(_selectedLokasiId!),
         'jumlah_terjual': nominal,
+        'sumber_kunjungan': _sumberKunjungan,
       };
 
       final result = await ApiService.addTransaksi(data);
@@ -408,6 +420,7 @@ class _PenjualanScreenState extends State<PenjualanScreen> {
                           onChanged: (String? newValue) async {
                             setState(() {
                               _selectedLokasiId = newValue;
+                              _sumberKunjungan = 'mandiri'; // user pindah manual
                               _rekomendasiSelanjutnya =
                                   null; // reset reko jika user pindah manual
                             });
@@ -418,12 +431,69 @@ class _PenjualanScreenState extends State<PenjualanScreen> {
                                 'selected_lokasi_id',
                                 newValue,
                               );
-                              _pindahLokasiKeBackend(newValue);
+                              _pindahLokasiKeBackend(
+                                newValue,
+                                sumber: 'mandiri',
+                              );
                             }
                           },
                         ),
                       ),
                     ),
+
+                    // Badge sumber kunjungan saat ini
+                    if (_isSesiAktif) ...[  
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const SizedBox(width: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: _sumberKunjungan == 'rekomendasi'
+                                  ? Colors.purple.shade50
+                                  : Colors.teal.shade50,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: _sumberKunjungan == 'rekomendasi'
+                                    ? Colors.purple.shade200
+                                    : Colors.teal.shade200,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  _sumberKunjungan == 'rekomendasi'
+                                      ? Icons.auto_awesome
+                                      : Icons.person,
+                                  size: 12,
+                                  color: _sumberKunjungan == 'rekomendasi'
+                                      ? Colors.purple.shade700
+                                      : Colors.teal.shade700,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  _sumberKunjungan == 'rekomendasi'
+                                      ? 'Ikut Rekomendasi AI'
+                                      : 'Mandiri',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: _sumberKunjungan == 'rekomendasi'
+                                        ? Colors.purple.shade700
+                                        : Colors.teal.shade700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
 
                     const SizedBox(height: 24),
 
@@ -754,16 +824,22 @@ class _PenjualanScreenState extends State<PenjualanScreen> {
 
                           setState(() {
                             _selectedLokasiId = targetId;
+                            _sumberKunjungan = 'rekomendasi'; // ikut AI
                             _rekomendasiSelanjutnya = null;
                           });
 
-                          _pindahLokasiKeBackend(targetId);
+                          _pindahLokasiKeBackend(
+                            targetId,
+                            sumber: 'rekomendasi',
+                          );
 
                           if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Lokasi diubah ke $targetNama'),
-                                backgroundColor: Colors.green,
+                                content: Text(
+                                  '✨ Lokasi diubah ke $targetNama (Rekomendasi AI)',
+                                ),
+                                backgroundColor: Colors.purple.shade600,
                                 behavior: SnackBarBehavior.floating,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(10),

@@ -28,7 +28,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   // Q-Learning Next Step state
   int? _currentLokasiId;
-  String _currentLokasiNama = 'Basecamp';
+  String _currentLokasiNama = 'Titik Awal';
   Map<String, dynamic>? _rekomendasiSelanjutnya;
   bool _isLoadingRekomendasi = false;
 
@@ -57,9 +57,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
       if (selectedLokasi == null) {
         selectedLokasi = lokasiList.firstWhere(
-          (loc) =>
-              loc['nama']?.toString().toLowerCase().contains('basecamp') ==
-              true,
+          (loc) => loc['is_default'] == true,
           orElse: () => null,
         );
       }
@@ -84,7 +82,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Lokasi saat ini belum diketahui (Basecamp tidak ditemukan).',
+            'Lokasi saat ini belum diketahui (Lokasi default tidak ditemukan).',
           ),
           backgroundColor: Colors.orange,
         ),
@@ -863,7 +861,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               Icon(Icons.psychology, color: Colors.blueGrey, size: 22),
               SizedBox(width: 8),
               Text(
-                "ASISTEN PINTAR",
+                "AJO CERDAS",
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.2,
@@ -877,7 +875,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
           if (!sesiAktif)
             Text(
-              'Mulai sesi berjualan untuk mendapatkan rekomendasi pintar yang terus memandu Anda di setiap lokasi.',
+              'Mulai berjualan untuk mendapatkan rekomendasi cerdas dari AJO yang akan terus memandu Anda di setiap lokasi.',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,

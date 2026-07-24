@@ -76,11 +76,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Icon(
-                    Icons.storefront,
-                    size: 80,
-                    color: Theme.of(context).primaryColor,
-                  ),
+                  Image.asset('assets/logo.png', width: 120, height: 120),
                   const SizedBox(height: 24),
                   Text(
                     'Pangkalan Sate',
@@ -93,7 +89,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Optimalkan Pendapatan dan Jarak',
+                    'Optimalkan Penjualan Cerdas Bersama Ajo',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 16, color: Colors.grey),
                   ),

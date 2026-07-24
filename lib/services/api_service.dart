@@ -15,13 +15,17 @@ class ApiService {
   static const bool isProduction = false;
 
   static String get baseUrl {
-    if (isProduction) {
-      return "https://ai-sate-optimization-backend-production.up.railway.app";
-    } else {
-      if (kIsWeb) return 'http://127.0.0.1:8000';
-      if (Platform.isAndroid) return 'http://10.0.2.2:8000';
-      return 'http://127.0.0.1:8000';
-    }
+    if (kIsWeb) return 'http://127.0.0.1:8000';
+    if (Platform.isAndroid) return 'http://192.168.100.130:8000';
+    return 'http://127.0.0.1:8000';
+
+    // if (isProduction) {
+    //   return "https://ai-sate-optimization-backend-production.up.railway.app";
+    // } else {
+    //   if (kIsWeb) return 'http://127.0.0.1:8000';
+    //   if (Platform.isAndroid) return 'http://10.0.2.2:8000';
+    //   return 'http://127.0.0.1:8000';
+    // }
   }
 
   static const String _tokenKey = 'jwt_token';
@@ -468,6 +472,4 @@ class ApiService {
       return {'success': false, 'message': 'Terjadi kesalahan jaringan: $e'};
     }
   }
-
-
 }

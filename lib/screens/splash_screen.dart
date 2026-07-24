@@ -78,7 +78,7 @@ class _SplashScreenState extends State<SplashScreen> {
             ),
           );
         }
-        
+
         if (isFirstTime) {
           Navigator.pushReplacement(
             context,
@@ -97,23 +97,23 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).primaryColor,
+      backgroundColor: Colors.white,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.storefront, size: 100, color: Colors.white),
+            Image.asset('assets/logo.png', width: 120, height: 120),
             const SizedBox(height: 24),
             Text(
               'Pangkalan Sate',
               style: GoogleFonts.nunito(
                 fontSize: 32,
                 fontWeight: FontWeight.w700,
-                color: Colors.white,
+                color: const Color(0xFF607D8B),
               ),
             ),
             const SizedBox(height: 24),
-            const CircularProgressIndicator(color: Colors.white),
+            const CircularProgressIndicator(color: Color(0xFF607D8B)),
           ],
         ),
       ),
