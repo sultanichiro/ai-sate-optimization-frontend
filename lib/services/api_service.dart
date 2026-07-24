@@ -12,7 +12,7 @@ class ApiService {
   //   return 'http://127.0.0.1:8000';
   // }
 
-  static const bool isProduction = false;
+  static const bool isProduction = true;
 
   static String get baseUrl {
     // if (kIsWeb) return 'http://127.0.0.1:8000';
@@ -20,7 +20,7 @@ class ApiService {
     // return 'http://127.0.0.1:8000';
 
     if (isProduction) {
-      return "https://ai-sate-optimization-backend-production-2999.up.railway.app";
+      return "https://ai-sate-optimization-backend-production.up.railway.app";
     } else {
       if (kIsWeb) return 'http://127.0.0.1:8000';
       if (Platform.isAndroid) return 'http://10.0.2.2:8000';
